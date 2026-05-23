@@ -1,0 +1,36 @@
+{
+  "name": "my-ai-video",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "render": "remotion render src/index.tsx MyComp out/video.mp4 --public-dir=public --gl=angle --image-format=jpeg --x264-preset=superfast",
+    "preview": "remotion preview src/index.tsx --port=3001 --public-dir=public --host"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@remotion/bundler": "4.0.464",
+    "@remotion/cli": "4.0.464",
+    "@remotion/renderer": "^4.0.464",
+    "@remotion/three": "4.0.464",
+    "body-parser": "^2.2.2",
+    "compromise": "^14.14.5",
+    "express": "^5.2.1",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "remotion": "4.0.464",
+    "three": "^0.184.0",
+    "typescript": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0"
+  }
+}

@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html class="dark">
+
+<head>
+    <title>Sednium Charon 1</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description"
+        content="Sednium Charon 1 — AI-powered generative video engine using Remotion. Create motion graphics from text prompts.">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23111'/><polygon points='12,8 12,24 26,16' fill='white'/></svg>">
+    <script>window.__tailwind_suppress_warning = true;</script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                fontFamily: { mono: ['"JetBrains Mono"', 'monospace'] },
+                extend: {
+                    colors: { black: '#000', white: '#fff', gray: { 50: '#f9fafb', 100: '#f3f4f6', 200: '#e5e7eb', 300: '#d1d5db', 400: '#9ca3af', 500: '#6b7280', 600: '#4b5563', 700: '#374151', 800: '#1f2937', 900: '#111827', 950: '#000' } },
+                    animation: { 'fade-in': 'fadeIn 0.5s ease-out forwards', 'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite' },
+                    keyframes: { fadeIn: { '0%': { opacity: '0', transform: 'translateY(10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } } }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --bg-color: #050505;
+            --text-color: #fff;
+            --border-color: #333;
+            --accent-color: #fff;
+            --accent-text: #000;
+        }
+
+        html.light {
+            --bg-color: #f5f5f5;
+            --text-color: #111;
+            --border-color: #ccc;
+            --accent-color: #000;
+            --accent-text: #fff;
+        }
+
+        html.cyberpunk {
+            --bg-color: #09090b;
+            --text-color: #00ff88;
+            --border-color: #00ff88;
+            --accent-color: #00ff88;
+            --accent-text: #09090b;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'JetBrains Mono', monospace;
+            overflow-x: hidden;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .border-line { border: 1px solid var(--border-color); }
+        .bg-panel { background: var(--bg-color); border: 1px solid var(--border-color); }
+        
+        .modal-overlay { background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); }
+
+        .selected-pill { color: var(--accent-text); background: var(--accent-color); }
+        .unselected-pill { color: var(--text-color); background: transparent; border: 1px solid var(--border-color); opacity: 0.6; }
+        .unselected-pill:hover { opacity: 1; border-color: var(--text-color); }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-color); }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-color); }
+
+        /* Loader Ring */
+        .loader-ring {
+            width: 64px; height: 64px;
+            position: relative;
+        }
+        .loader-ring::before, .loader-ring::after {
+            content: ''; position: absolute; inset: 0;
+            border-radius: 50%;
+            border: 2px solid transparent;
+        }
+        .loader-ring::before {
+            border-top-color: var(--accent-color);
+            animation: spin 1s linear infinite;
+        }
+        .loader-ring::after {
+            border-bottom-color: var(--accent-color);
+            opacity: 0.3;
+            animation: spin 1.5s linear infinite reverse;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Progress Bar */
+        .progress-track {
+            width: 200px; height: 3px;
+            background: var(--border-color);
+            border-radius: 2px; overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; width: 0%;
+            background: var(--accent-color);
+            border-radius: 2px;
+            transition: width 0.6s ease;
+        }
+
+        /* Step dots */
+        .step-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--border-color);
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+        .step-dot.active {
+            background: var(--accent-color);
+            box-shadow: 0 0 8px var(--accent-color);
+        }
+        .step-dot.done {
+            background: var(--accent-color);
+        }
+        
+        input, select, textarea {
+            background: transparent;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--accent-color);
+            outline: none;
+        }
+        option {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+        
+        .btn-primary {
+            background: var(--accent-color);
+            color: var(--accent-text);
+        }
+        .btn-primary:hover {
+            opacity: 0.8;
+        }
+
+        /* Futuristic Glassmorphism Dev Deck */
+        .glass-deck {
+            background: rgba(10, 10, 12, 0.82) !important;
+            backdrop-filter: blur(24px) saturate(1.8);
+            -webkit-backdrop-filter: blur(24px) saturate(1.8);
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+        }
+
+        /* Sleek underline transition tabs */
+        .tab-btn {
+            position: relative;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: var(--text-color);
+            opacity: 0.45;
+            padding: 10px 0;
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .tab-btn:hover {
+            opacity: 0.9;
+        }
+
+        .tab-btn.active {
+            opacity: 1;
+            color: var(--accent-color);
+            border-bottom-color: var(--accent-color);
+            font-weight: 700;
+        }
+
+        html.cyberpunk .tab-btn.active {
+            color: #00ff88;
+            border-bottom-color: #00ff88;
+            text-shadow: 0 0 12px rgba(0, 255, 136, 0.4);
+        }
+
+        /* Telemetry Stream Lines */
+        .log-line {
+            border-left: 2px solid rgba(255, 255, 255, 0.06);
+            padding: 4px 8px;
+            margin-bottom: 4px;
+            transition: all 0.15s ease;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            line-height: 1.4;
+            border-radius: 0 4px 4px 0;
+        }
+        .log-line:hover {
+            background: rgba(255, 255, 255, 0.03);
+            border-left-color: var(--accent-color);
+        }
+        html.cyberpunk .log-line:hover {
+            border-left-color: #00ff88;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col items-center justify-center p-6 selection:bg-white selection:text-black relative">
+
+    <!-- Settings Button -->
+    <button onclick="toggleSettings()" class="absolute top-6 right-6 p-2 rounded-full hover:bg-white/10 transition-colors z-40">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+    </button>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300 p-4">
+        <div class="bg-panel p-6 sm:p-8 rounded-xl w-full max-w-md border-line shadow-2xl relative mx-4">
+            <h2 class="text-2xl font-bold mb-6">Engine Settings</h2>
+            
+            <div class="space-y-4">
+                <!-- Theme Select -->
+                <div>
+                    <label class="text-xs uppercase tracking-wider opacity-60 mb-2 block">Theme</label>
+                    <select id="themeSelect" onchange="applyTheme()" class="w-full p-2 text-sm rounded">
+                        <option value="dark">Dark (Default)</option>
+                        <option value="light">Light Mode</option>
+                        <option value="cyberpunk">Cyberpunk Terminal</option>
+                    </select>
+                </div>
+                
+                <!-- Provider Select -->
+                <div>
+                    <label class="text-xs uppercase tracking-wider opacity-60 mb-2 block">AI Provider</label>
+                    <select id="providerSelect" onchange="onProviderChange()" class="w-full p-2 text-sm rounded">
+                        <option value="local">Local Super-Template Engine</option>
+                        <option value="google">Google Generative AI (Gemini)</option>
+                        <option value="openai">OpenAI</option>
+                        <option value="anthropic">Anthropic</option>
+                        <option value="groq">Groq</option>
+                        <option value="deepseek">DeepSeek</option>
+                        <option value="together">Together AI</option>
+                    </select>
+                </div>
+                
+                <!-- API Key -->
+                <div id="apiKeyContainer" class="hidden">
+                    <label class="text-xs uppercase tracking-wider opacity-60 mb-2 block">API Key</label>
+                    <input type="password" id="apiKey" onblur="fetchModels()" placeholder="AIzaSy..." class="w-full p-2 text-sm rounded">
+                </div>
+                
+                <!-- Model Select (Searchable) -->
+                <div>
+                    <label class="text-xs uppercase tracking-wider opacity-60 mb-2 block">AI Model</label>
+                    <div class="relative">
+                        <div class="flex gap-2">
+                            <input type="text" id="modelSearchInput" placeholder="Search models..." 
+                                oninput="filterModels()" onfocus="showModelDropdown()" 
+                                class="w-full p-2 text-sm rounded" autocomplete="off">
+                            <input type="hidden" id="modelSelectValue" value="Super-Template-Engine">
+                            <button onclick="fetchModels()" class="px-3 border-line rounded hover:bg-white/10" title="Refresh Models">↻</button>
+                        </div>
+                        <div id="modelDropdown" class="absolute left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto rounded border hidden z-50"
+                            style="background: var(--bg-color); border-color: var(--border-color);">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Dev Mode Toggle -->
+                <div class="flex items-center justify-between pt-4 border-t border-[var(--border-color)]">
+                    <label class="text-sm font-medium">Developer Mode (Show Terminal & Code)</label>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="devModeToggle" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                    </label>
+                </div>
+                
+                <!-- Force Recompile Toggle -->
+                <div class="flex items-center justify-between pt-4 border-t border-[var(--border-color)]">
+                    <label class="text-sm font-medium">Force Recompile (Bypass Cache)</label>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="forceRecompileToggle" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                    </label>
+                </div>
+            </div>
+            
+            <button onclick="toggleSettings()" class="mt-8 w-full btn-primary py-3 rounded font-bold tracking-wider">DONE</button>
+        </div>
+    </div>
+
+    <div class="w-full max-w-5xl animate-fade-in z-10">
+
+        <!-- Header -->
+        <header class="flex justify-between items-end mb-12 border-b border-[var(--border-color)] pb-6">
+            <div>
+                <h1 class="text-4xl font-bold tracking-tight mb-2">SEDNIUM<span class="font-light opacity-50">_CHARON</span></h1>
+                <div class="flex items-center gap-2 text-xs opacity-60">
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    <span>SYSTEM ONLINE v1.0</span>
+                </div>
+            </div>
+            <div class="text-right hidden md:block">
+                <p class="text-xs opacity-60">GENERATIVE VIDEO ENGINE</p>
+                <p class="text-xs opacity-80">ADVANCED MODE ACTIVE</p>
+            </div>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12">
+
+            <!-- LEFT COLUMN: CONTROLS -->
+            <div class="lg:col-span-4 space-y-8">
+                <!-- Duration Selector -->
+                <div class="group">
+                    <label class="text-[10px] uppercase tracking-widest mb-3 block opacity-60">Timeframe</label>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button onclick="setDuration(5)" class="dur-btn selected-pill py-2 text-xs font-medium transition-all rounded" data-val="5">05s</button>
+                        <button onclick="setDuration(10)" class="dur-btn unselected-pill py-2 text-xs font-medium transition-all rounded" data-val="10">10s</button>
+                        <button onclick="setDuration(20)" class="dur-btn unselected-pill py-2 text-xs font-medium transition-all rounded" data-val="20">20s</button>
+                        <button onclick="setDuration(30)" class="dur-btn unselected-pill py-2 text-xs font-medium transition-all rounded" data-val="30">30s</button>
+                    </div>
+                </div>
+
+                <!-- FPS Selector -->
+                <div class="group">
+                    <label class="text-[10px] uppercase tracking-widest mb-3 block opacity-60">Framerate</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="setFps(24)" class="fps-btn unselected-pill py-2 text-xs font-medium transition-all rounded" data-val="24">24fps</button>
+                        <button onclick="setFps(30)" class="fps-btn selected-pill py-2 text-xs font-medium transition-all rounded" data-val="30">30fps</button>
+                        <button onclick="setFps(60)" class="fps-btn unselected-pill py-2 text-xs font-medium transition-all rounded" data-val="60">60fps</button>
+                    </div>
+                </div>
+
+                <!-- Resolution Selector -->
+                <div class="group">
+                    <label class="text-[10px] uppercase tracking-widest mb-3 block opacity-60">Resolution</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="setResolution(1920,1080)" class="res-btn unselected-pill py-2 text-xs font-medium transition-all rounded" data-val="1920x1080">1080p HD</button>
+                        <button onclick="setResolution(1280,720)" class="res-btn selected-pill py-2 text-xs font-medium transition-all rounded" data-val="1280x720">720p</button>
+                        <button onclick="setResolution(1080,1920)" class="res-btn unselected-pill py-2 text-xs font-medium transition-all rounded" data-val="1080x1920">9:16 Reel</button>
+                        <button onclick="setResolution(720,720)" class="res-btn unselected-pill py-2 text-xs font-medium transition-all rounded" data-val="720x720">1:1 Square</button>
+                    </div>
+                </div>
+
+                <!-- Style Selector -->
+                <div class="group">
+                    <label class="text-[10px] uppercase tracking-widest mb-3 block opacity-60">Aesthetic</label>
+                    <div class="space-y-2">
+                        <button onclick="setStyle('2d')" class="style-btn w-full text-left px-4 py-3 border-line rounded text-sm flex justify-between items-center group/btn selected-pill" data-val="2d">
+                            <span>Vector_Flat</span><span class="opacity-0 group-hover/btn:opacity-100 transition-opacity">→</span>
+                        </button>
+                        <button onclick="setStyle('realistic')" class="style-btn w-full text-left px-4 py-3 border-line rounded text-sm flex justify-between items-center group/btn" data-val="realistic">
+                            <span>Cinematic_Real</span><span class="opacity-0 group-hover/btn:opacity-100 transition-opacity">→</span>
+                        </button>
+                        <button onclick="setStyle('anime')" class="style-btn w-full text-left px-4 py-3 border-line rounded text-sm flex justify-between items-center group/btn" data-val="anime">
+                            <span>Anime_High_Octane</span><span class="opacity-0 group-hover/btn:opacity-100 transition-opacity">→</span>
+                        </button>
+                        <button onclick="setStyle('3d')" class="style-btn w-full text-left px-4 py-3 border-line rounded text-sm flex justify-between items-center group/btn" data-val="3d">
+                            <span>Three_ISO</span><span class="opacity-0 group-hover/btn:opacity-100 transition-opacity">→</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick Templates -->
+                <div class="group">
+                    <label class="text-[10px] uppercase tracking-widest mb-3 block opacity-60">Quick Templates</label>
+                    <div class="space-y-2">
+                        <button onclick="useTemplate('closeup shot of artemis 2 three d and realistic floating in space and earth in background make the artemis model look realistic and accurate as the real world model', 10, '3d')" 
+                            class="w-full text-left px-3 py-2 border-line rounded text-[11px] opacity-60 hover:opacity-100 transition-opacity truncate">
+                            🚀 Artemis II Spacecraft (3D)
+                        </button>
+                        <button onclick="useTemplate('Logo spin animation with a glowing 3D metallic logo rotating 360 degrees on a dark gradient background with light rays', 5, '3d')" 
+                            class="w-full text-left px-3 py-2 border-line rounded text-[11px] opacity-60 hover:opacity-100 transition-opacity truncate">
+                            🎯 Logo Spin Animation
+                        </button>
+                        <button onclick="useTemplate('YouTube intro with kinetic typography: bold text flies in from all sides, glitch effect, energetic particles, dark background', 5, '2d')" 
+                            class="w-full text-left px-3 py-2 border-line rounded text-[11px] opacity-60 hover:opacity-100 transition-opacity truncate">
+                            🎬 YouTube Intro
+                        </button>
+                        <button onclick="useTemplate('Animated bar chart showing data growing from 0 to max values with smooth easing, labels appearing one by one, clean minimal style', 10, '2d')" 
+                            class="w-full text-left px-3 py-2 border-line rounded text-[11px] opacity-60 hover:opacity-100 transition-opacity truncate">
+                            📊 Data Visualization
+                        </button>
+                        <button onclick="useTemplate('Cinematic text reveal: inspirational quote fades in word by word with a slow zoom, warm golden light, bokeh particles floating', 10, 'realistic')" 
+                            class="w-full text-left px-3 py-2 border-line rounded text-[11px] opacity-60 hover:opacity-100 transition-opacity truncate">
+                            ✨ Kinetic Typography
+                        </button>
+                        <button onclick="useTemplate('Countdown timer from 10 to 0 with explosive number transitions, neon glow effects, cyberpunk color scheme, screen shake on each number', 10, '2d')" 
+                            class="w-full text-left px-3 py-2 border-line rounded text-[11px] opacity-60 hover:opacity-100 transition-opacity truncate">
+                            ⏱️ Countdown Timer
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: INPUT & OUTPUT -->
+            <div class="lg:col-span-8 flex flex-col h-full">
+
+                <!-- Prompt Area -->
+                <div class="relative mb-6 group">
+                    <div class="absolute -top-3 left-2 px-1 bg-[var(--bg-color)] text-[10px] uppercase tracking-wider transition-colors opacity-60">
+                        Command Input
+                    </div>
+                    <textarea id="aiPrompt" placeholder="Describe the motion graphics you want to generate..."
+                        class="w-full h-32 p-4 text-base rounded border-line resize-none"></textarea>
+                    <div class="absolute bottom-4 right-4 flex gap-2">
+                        <button onclick="generateVideo()" id="generateBtn" class="btn-primary px-6 py-2 text-xs font-bold rounded transition-transform active:scale-95">
+                            EXECUTE_GEN
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Main Output Area -->
+                <div class="flex-grow flex flex-col relative border-line rounded bg-panel overflow-hidden" style="min-height: 400px;">
+                    
+                    <!-- DEFAULT STATE -->
+                    <div id="defaultState" class="absolute inset-0 flex flex-col items-center justify-center opacity-40">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="mb-4">
+                            <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+                            <line x1="7" y1="2" x2="7" y2="22"></line>
+                            <line x1="17" y1="2" x2="17" y2="22"></line>
+                            <line x1="2" y1="12" x2="22" y2="12"></line>
+                            <line x1="2" y1="7" x2="7" y2="7"></line>
+                            <line x1="2" y1="17" x2="7" y2="17"></line>
+                            <line x1="17" y1="17" x2="22" y2="17"></line>
+                            <line x1="17" y1="7" x2="22" y2="7"></line>
+                        </svg>
+                        <p class="text-xs uppercase tracking-widest font-medium">Awaiting Prompt</p>
+                    </div>
+
+                    <!-- LOADING STATE (Cinematic) -->
+                    <div id="loadingState" class="absolute inset-0 flex flex-col items-center justify-center hidden bg-[var(--bg-color)] z-20">
+                        <div class="loader-ring mb-6"></div>
+                        <p class="text-sm uppercase tracking-widest font-bold mb-1" id="loadingText">Synthesizing Scene...</p>
+                        <p class="text-[10px] opacity-40 mb-6 max-w-xs text-center" id="loadingStatusText">Starting pipeline...</p>
+                        
+                        <!-- Progress Bar -->
+                        <div class="progress-track mb-5">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+
+                        <!-- Step Indicators -->
+                        <div class="flex items-center gap-3">
+                            <div class="flex items-center gap-2">
+                                <div class="step-dot" id="stepDot0"></div>
+                                <span class="text-[9px] uppercase tracking-wider opacity-40" id="stepLabel0">Init</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="step-dot" id="stepDot1"></div>
+                                <span class="text-[9px] uppercase tracking-wider opacity-40" id="stepLabel1">AI Code</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="step-dot" id="stepDot2"></div>
+                                <span class="text-[9px] uppercase tracking-wider opacity-40" id="stepLabel2">Compile</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="step-dot" id="stepDot3"></div>
+                                <span class="text-[9px] uppercase tracking-wider opacity-40" id="stepLabel3">Render</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DEV MODE TERMINAL & CODE (Hidden by default) -->
+                    <div id="devPanel" class="absolute inset-0 z-10 glass-deck flex flex-col overflow-hidden hidden">
+                        <div class="flex border-b border-[var(--border-color)]" style="flex-shrink:0;">
+                            <button id="tabTerminal" onclick="switchDevTab('terminal')" class="tab-btn active flex-1 text-center font-semibold">TERMINAL LOGS</button>
+                            <button id="tabCode" onclick="switchDevTab('code')" class="tab-btn flex-1 text-center font-semibold">SOURCE CODE</button>
+                            <button id="tabPreview" onclick="switchDevTab('preview')" class="tab-btn flex-1 text-center font-semibold">LIVE STUDIO PREVIEW</button>
+                        </div>
+                        <!-- Terminal -->
+                        <div id="terminalBox" class="p-4 font-mono text-[10px] opacity-80 whitespace-pre-wrap" 
+                            style="flex:1; overflow-y:auto; display:block;"></div>
+                        <!-- Code -->
+                        <textarea id="codeInput" class="p-4 font-mono text-[10px] resize-none" readonly placeholder="// Code will appear here"
+                            style="flex:1; overflow-y:auto; display:none; background:transparent; color:var(--text-color); border:none;"></textarea>
+                        <!-- Live Studio Preview -->
+                        <div id="studioPreviewBox" style="flex: 1; display: none; flex-direction: column; overflow: hidden; height: 100%; width: 100%;">
+                            <iframe src="about:blank" style="width:100%; height:100%; border:none; background:#000;" id="studioIframe"></iframe>
+                        </div>
+                    </div>
+
+                    <!-- VIDEO PREVIEW -->
+                    <div id="videoPreview" class="absolute inset-0 hidden flex-col bg-[#0a0a0a] z-30">
+                        <div class="flex justify-between items-center p-3 border-b border-[#222]">
+                            <span class="text-[10px] text-gray-400 uppercase tracking-widest">Output Preview</span>
+                            <div class="flex gap-3">
+                                <button onclick="downloadVideo()" class="text-[10px] text-gray-400 uppercase tracking-wider hover:text-white transition-colors">
+                                    ↓ Download
+                                </button>
+                                <button onclick="closePreview()" class="text-[10px] text-gray-400 uppercase tracking-wider hover:text-white transition-colors">
+                                    ✕ Close
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex-1 flex items-center justify-center p-4">
+                            <video id="videoPlayer" controls playsinline class="max-h-full w-full rounded border border-[#222]" style="aspect-ratio: 16/9;">
+                            </video>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- History Modal -->
+
+
+    <script>
+        let selectedDuration = 5;
+        let selectedStyle = '2d';
+        let selectedFps = 30;
+        let selectedWidth = 1280;
+        let selectedHeight = 720;
+        let lastVideoUrl = null;
+
+        // UI Helpers
+        function setDuration(sec) {
+            selectedDuration = sec;
+            updatePills('.dur-btn', sec);
+            saveSettings();
+        }
+        function setFps(f) {
+            selectedFps = f;
+            updatePills('.fps-btn', f);
+            saveSettings();
+        }
+        function setStyle(s) {
+            selectedStyle = s;
+            document.querySelectorAll('.style-btn').forEach(b => {
+                b.classList.remove('selected-pill');
+                if (b.dataset.val === s) b.classList.add('selected-pill');
+            });
+            saveSettings();
+        }
+        function setResolution(w, h) {
+            selectedWidth = w;
+            selectedHeight = h;
+            document.querySelectorAll('.res-btn').forEach(b => {
+                b.classList.remove('selected-pill');
+                b.classList.add('unselected-pill');
+                if (b.dataset.val === `${w}x${h}`) {
+                    b.classList.add('selected-pill');
+                    b.classList.remove('unselected-pill');
+                }
+            });
+            saveSettings();
+        }
+        function useTemplate(prompt, duration, style) {
+            document.getElementById('aiPrompt').value = prompt;
+            setDuration(duration);
+            setStyle(style);
+        }
+        function updatePills(selector, val) {
+            document.querySelectorAll(selector).forEach(b => {
+                b.classList.remove('selected-pill');
+                b.classList.add('unselected-pill');
+                if (parseInt(b.dataset.val) === val) {
+                    b.classList.add('selected-pill');
+                    b.classList.remove('unselected-pill');
+                }
+            });
+        }
+
+        // Settings Modal & Features
+        function toggleSettings() {
+            const modal = document.getElementById('settingsModal');
+            if (modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+                setTimeout(() => modal.classList.remove('opacity-0'), 10);
+            } else {
+                modal.classList.add('opacity-0');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            }
+        }
+
+        function applyTheme() {
+            document.documentElement.className = document.getElementById('themeSelect').value;
+        }
+
+        function onProviderChange() {
+            const provider = document.getElementById('providerSelect').value;
+            const keyCont = document.getElementById('apiKeyContainer');
+            if (provider !== 'local') {
+                keyCont.classList.remove('hidden');
+            } else {
+                keyCont.classList.add('hidden');
+            }
+            fetchModels();
+        }
+
+        let allModels = []; // stores fetched models for filtering
+
+        async function fetchModels() {
+            const provider = document.getElementById('providerSelect').value;
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const input = document.getElementById('modelSearchInput');
+            const currentVal = document.getElementById('modelSelectValue').value;
+            const currentDisplayName = input.value;
+            
+            if (provider === 'local') {
+                allModels = [{ name: 'Super-Template-Engine', displayName: 'Super-Template AI Engine' }];
+                input.value = 'Super-Template AI Engine';
+                document.getElementById('modelSelectValue').value = 'Super-Template-Engine';
+                renderModelDropdown(allModels);
+                hideModelDropdown();
+                return;
+            }
+
+            if (!apiKey) {
+                allModels = [];
+                input.value = '';
+                document.getElementById('modelSelectValue').value = '';
+                input.placeholder = 'Enter API key first...';
+                return;
+            }
+
+            // Keep the loaded display name so it doesn't blank out, but set loading placeholder
+            input.placeholder = 'Loading models...';
+            try {
+                const res = await fetch(`/api/models?provider=${encodeURIComponent(provider)}&apiKey=${encodeURIComponent(apiKey)}`);
+                const data = await res.json();
+                if (data.error) {
+                    allModels = [];
+                    input.placeholder = `Error: ${data.error}`;
+                    return;
+                }
+                if (data.models && data.models.length > 0) {
+                    allModels = data.models;
+                    input.placeholder = `Type to search ${allModels.length} models...`;
+                    
+                    // Restore preference or auto-select first
+                    const exists = allModels.some(m => m.name === currentVal);
+                    if (exists) {
+                        const matched = allModels.find(m => m.name === currentVal);
+                        input.value = matched.displayName;
+                        document.getElementById('modelSelectValue').value = matched.name;
+                    } else if (currentVal && currentVal !== 'Super-Template-Engine') {
+                        // Trust loaded preference if it wasn't the local fallback
+                        input.value = currentDisplayName || currentVal;
+                        document.getElementById('modelSelectValue').value = currentVal;
+                    } else {
+                        // Auto-select first model
+                        input.value = allModels[0].displayName;
+                        document.getElementById('modelSelectValue').value = allModels[0].name;
+                    }
+                    renderModelDropdown(allModels);
+                    saveSettings(); // Save preference
+                } else {
+                    allModels = [];
+                    input.placeholder = 'No models available';
+                }
+            } catch(e) {
+                allModels = [];
+                input.placeholder = 'Error connecting to server';
+            }
+        }
+
+        function renderModelDropdown(models) {
+            const dropdown = document.getElementById('modelDropdown');
+            dropdown.innerHTML = '';
+            models.forEach(m => {
+                const div = document.createElement('div');
+                div.innerText = m.displayName;
+                div.dataset.value = m.name;
+                div.style.cssText = 'padding: 8px 12px; cursor: pointer; font-size: 12px; border-bottom: 1px solid var(--border-color);';
+                div.onmouseenter = () => div.style.background = 'var(--accent-color)';
+                div.onmouseleave = () => div.style.background = 'transparent';
+                div.onclick = () => selectModel(m.name, m.displayName);
+                dropdown.appendChild(div);
+            });
+        }
+
+        function filterModels() {
+            const query = document.getElementById('modelSearchInput').value.toLowerCase();
+            const filtered = allModels.filter(m => 
+                m.displayName.toLowerCase().includes(query) || m.name.toLowerCase().includes(query)
+            );
+            renderModelDropdown(filtered);
+            showModelDropdown();
+        }
+
+        function showModelDropdown() {
+            if (allModels.length === 0) return;
+            document.getElementById('modelDropdown').classList.remove('hidden');
+        }
+
+        function hideModelDropdown() {
+            setTimeout(() => document.getElementById('modelDropdown').classList.add('hidden'), 200);
+        }
+
+        function selectModel(value, displayName) {
+            document.getElementById('modelSearchInput').value = displayName;
+            document.getElementById('modelSelectValue').value = value;
+            hideModelDropdown();
+            saveSettings();
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#modelSearchInput') && !e.target.closest('#modelDropdown')) {
+                document.getElementById('modelDropdown').classList.add('hidden');
+            }
+        });
+
+        // Generation Flow
+        async function generateVideo() {
+            const prompt = document.getElementById('aiPrompt').value;
+            if (!prompt.trim()) return alert("Enter a prompt");
+
+            const genBtn = document.getElementById('generateBtn');
+            genBtn.disabled = true;
+            genBtn.innerText = "PROCESSING...";
+
+            const isDevMode = document.getElementById('devModeToggle').checked;
+            const forceRecompile = document.getElementById('forceRecompileToggle').checked;
+            const provider = document.getElementById('providerSelect').value;
+            const apiKey = document.getElementById('apiKey').value;
+            const model = document.getElementById('modelSelectValue').value;
+
+            const terminalBox = document.getElementById('terminalBox');
+            const codeBox = document.getElementById('codeInput');
+            const loadingState = document.getElementById('loadingState');
+            const defaultState = document.getElementById('defaultState');
+            const devPanel = document.getElementById('devPanel');
+            const videoPreview = document.getElementById('videoPreview');
+
+            // Reset UI
+            terminalBox.innerHTML = '';
+            codeBox.value = '';
+            defaultState.classList.add('hidden');
+            videoPreview.classList.add('hidden');
+            resetLoadingUI();
+            
+            if (isDevMode) {
+                devPanel.classList.remove('hidden');
+                loadingState.classList.add('hidden');
+                switchDevTab('terminal');
+            } else {
+                devPanel.classList.add('hidden');
+                loadingState.classList.remove('hidden');
+            }
+
+            try {
+                const response = await fetch('/stream-generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt, provider, apiKey, model, duration: selectedDuration, style: selectedStyle, fps: selectedFps, width: selectedWidth, height: selectedHeight, bypassCache: forceRecompile })
+                });
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while(true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    buffer += decoder.decode(value, {stream: true});
+                    let lines = buffer.split('\n');
+                    buffer = lines.pop(); // keep the last incomplete chunk in buffer
+                    
+                    for(let line of lines) {
+                        if(!line.trim()) continue;
+                        try {
+                            const data = JSON.parse(line);
+                            if (data.type === 'log') {
+                                // Add to terminal
+                                const div = document.createElement('div');
+                                div.className = 'log-line';
+                                const span = document.createElement('span');
+                                span.innerText = `> ${data.message}`;
+                                div.appendChild(span);
+                                
+                                if (data.message.includes('[AI]')) {
+                                    div.style.borderLeftColor = '#06b6d4'; // Cyan for AI prompts
+                                    span.className = 'text-cyan-400 font-bold';
+                                } else if (data.message.includes('error') || data.message.includes('Error') || data.message.includes('failed') || data.message.includes('Failed')) {
+                                    div.style.borderLeftColor = '#f43f5e'; // Rose for errors
+                                    span.className = 'text-rose-400 font-bold';
+                                } else if (data.message.includes('AUTO-FALLBACK') || data.message.includes('Switching') || data.message.includes('Local AI fallback')) {
+                                    div.style.borderLeftColor = '#f59e0b'; // Amber for fallback triggers
+                                    span.className = 'text-amber-400 font-bold';
+                                } else if (data.message.includes('[System]')) {
+                                    div.style.borderLeftColor = '#9ca3af'; // Gray for system logs
+                                    span.className = 'text-gray-400';
+                                } else {
+                                    div.style.borderLeftColor = '#10b981'; // Green for normal process info
+                                    span.className = 'text-emerald-400';
+                                }
+                                
+                                terminalBox.appendChild(div);
+                                while (terminalBox.childNodes.length > 250) {
+                                    terminalBox.removeChild(terminalBox.firstChild);
+                                }
+                                terminalBox.scrollTop = terminalBox.scrollHeight;
+                                
+                                // Update loading progress — drive steps and progress bar
+                                const msg = data.message;
+                                if (msg.includes('Starting engine')) {
+                                    setLoadingStep(0, 'Initializing pipeline...', 5);
+                                } else if (msg.includes('Generating code')) {
+                                    const attemptMatch = msg.match(/Attempt (\d)\/3/);
+                                    if (attemptMatch && attemptMatch[1] !== '1') {
+                                        setLoadingStep(1, `Auto-fixing code (attempt ${attemptMatch[1]})...`, 35);
+                                    } else {
+                                        setLoadingStep(1, 'AI is writing your video code...', 25);
+                                    }
+                                } else if (msg.includes('npm run render') || msg.includes('Rendering')) {
+                                    setLoadingStep(2, 'Compiling video...', 55);
+                                } else if (msg.includes('Render successful')) {
+                                    setLoadingStep(3, 'Finalizing output...', 95);
+                                } else if (msg.includes('Requesting fix')) {
+                                    setLoadingStep(1, 'AI is analyzing and fixing errors...', 30);
+                                } else if (msg.includes('ℹ') || msg.includes('frames')) {
+                                    // Remotion render progress — bump the bar
+                                    const frameMatch = msg.match(/(\d+)%/);
+                                    if (frameMatch) {
+                                        const pct = Math.min(55 + parseInt(frameMatch[1]) * 0.4, 95);
+                                        document.getElementById('progressFill').style.width = pct + '%';
+                                    }
+                                }
+                            } 
+                            else if (data.type === 'code') {
+                                codeBox.value = data.code;
+                            } 
+                            else if (data.type === 'success') {
+                                showPreview(data.videoUrl);
+                                loadingState.classList.add('hidden');
+                            } 
+                            else if (data.type === 'error') {
+                                terminalBox.innerHTML += `<div class="text-red-500 font-bold mt-4">> FATAL ERROR: ${data.message}</div>`;
+                                
+                                // Reset the loading text for the next run
+                                document.getElementById('loadingText').innerText = "Generating Video...";
+                                document.getElementById('loadingText').classList.remove('text-red-500');
+                                
+                                if (!isDevMode) {
+                                    loadingState.classList.add('hidden');
+                                    defaultState.classList.remove('hidden');
+                                    alert(`Generation Error:\n${data.message}\n\nTip: Enable Developer Mode (in Settings ⚙️) to see the terminal logs and AI fix attempts.`);
+                                }
+                            }
+                        } catch(e) {
+                            console.error("Failed to parse chunk", line);
+                        }
+                    }
+                }
+            } catch(e) {
+                terminalBox.innerHTML += `<div class="text-red-500">> NETWORK ERROR: ${e.message}</div>`;
+                loadingState.classList.add('hidden');
+                defaultState.classList.remove('hidden');
+                if (!isDevMode) {
+                    alert(`Network error:\n${e.message}\n\nMake sure the server is running and you have internet access.`);
+                }
+            } finally {
+                genBtn.disabled = false;
+                genBtn.innerText = "EXECUTE_GEN";
+            }
+        }
+
+        function setLoadingStep(stepIndex, statusText, progressPct) {
+            document.getElementById('loadingStatusText').innerText = statusText;
+            document.getElementById('progressFill').style.width = progressPct + '%';
+            // Update step dots
+            for (let i = 0; i < 4; i++) {
+                const dot = document.getElementById('stepDot' + i);
+                const label = document.getElementById('stepLabel' + i);
+                dot.classList.remove('active', 'done');
+                label.style.opacity = '0.4';
+                if (i < stepIndex) {
+                    dot.classList.add('done');
+                    label.style.opacity = '0.6';
+                } else if (i === stepIndex) {
+                    dot.classList.add('active');
+                    label.style.opacity = '1';
+                }
+            }
+        }
+
+        function resetLoadingUI() {
+            document.getElementById('loadingText').innerText = 'Synthesizing Scene...';
+            document.getElementById('loadingStatusText').innerText = 'Starting pipeline...';
+            document.getElementById('progressFill').style.width = '0%';
+            for (let i = 0; i < 4; i++) {
+                document.getElementById('stepDot' + i).classList.remove('active', 'done');
+                document.getElementById('stepLabel' + i).style.opacity = '0.4';
+            }
+        }
+
+        function showPreview(url) {
+            lastVideoUrl = url;
+            const video = document.getElementById('videoPlayer');
+            video.src = url;
+            video.load();
+            document.getElementById('videoPreview').classList.remove('hidden');
+            document.getElementById('loadingState').classList.add('hidden');
+            video.play().catch(() => {});
+
+            // Save to history
+            const prompt = document.getElementById('aiPrompt').value;
+            const provider = document.getElementById('providerSelect').value;
+            const model = document.getElementById('modelSearchInput').value;
+            addToHistory({ prompt, videoUrl: url, provider, model, timestamp: Date.now(), resolution: `${selectedWidth}x${selectedHeight}` });
+        }
+
+        function closePreview() {
+            const video = document.getElementById('videoPlayer');
+            video.pause();
+            document.getElementById('videoPreview').classList.add('hidden');
+            // In dev mode, show the dev panel behind it; otherwise show default
+            const isDevMode = document.getElementById('devModeToggle').checked;
+            if (isDevMode) {
+                document.getElementById('devPanel').classList.remove('hidden');
+            } else {
+                document.getElementById('defaultState').classList.remove('hidden');
+            }
+        }
+
+        function downloadVideo() {
+            if (!lastVideoUrl) return;
+            const a = document.createElement('a');
+            a.href = lastVideoUrl;
+            a.download = `charon_export_${Date.now()}.mp4`;
+            a.click();
+        }
+
+        function switchDevTab(tab) {
+            const terminalBox = document.getElementById('terminalBox');
+            const codeInput = document.getElementById('codeInput');
+            const studioPreviewBox = document.getElementById('studioPreviewBox');
+            const tabTerminal = document.getElementById('tabTerminal');
+            const tabCode = document.getElementById('tabCode');
+            const tabPreview = document.getElementById('tabPreview');
+            const iframe = document.getElementById('studioIframe');
+
+            // Reset tabs
+            tabTerminal.classList.remove('active');
+            tabCode.classList.remove('active');
+            tabPreview.classList.remove('active');
+
+            // Hide boxes
+            terminalBox.style.display = 'none';
+            codeInput.style.display = 'none';
+            studioPreviewBox.style.display = 'none';
+
+            // Clean background iframe connections when not in focus to eliminate lag
+            if (iframe && tab !== 'preview' && iframe.src !== 'about:blank') {
+                iframe.src = 'about:blank';
+            }
+
+            if (tab === 'terminal') {
+                terminalBox.style.display = 'block';
+                tabTerminal.classList.add('active');
+            } else if (tab === 'code') {
+                codeInput.style.display = 'block';
+                tabCode.classList.add('active');
+            } else if (tab === 'preview') {
+                studioPreviewBox.style.display = 'flex';
+                studioPreviewBox.style.flexDirection = 'column';
+                tabPreview.classList.add('active');
+                if (iframe) {
+                    const protocol = window.location.protocol;
+                    const hostname = window.location.hostname;
+                    iframe.src = `${protocol}//${hostname}:3001`;
+                }
+            }
+        }
+
+        // =================================================================
+        // HISTORY SYSTEM
+        // =================================================================
+        function getHistory() {
+            try { return JSON.parse(localStorage.getItem('charon_history') || '[]'); } catch { return []; }
+        }
+
+        function addToHistory(entry) {
+            const history = getHistory();
+            history.unshift(entry); // newest first
+            if (history.length > 50) history.length = 50; // cap at 50
+            localStorage.setItem('charon_history', JSON.stringify(history));
+            updateHistoryCount();
+        }
+
+        function clearHistory() {
+            if (!confirm('Delete all generation history?')) return;
+            localStorage.removeItem('charon_history');
+            updateHistoryCount();
+            renderHistory();
+        }
+
+        function updateHistoryCount() {
+            const count = getHistory().length;
+            document.getElementById('historyCount').innerText = `${count} item${count !== 1 ? 's' : ''}`;
+        }
+
+        function toggleHistory() {
+            const modal = document.getElementById('historyModal');
+            if (modal.classList.contains('hidden')) {
+                renderHistory();
+                modal.classList.remove('hidden');
+                setTimeout(() => modal.classList.remove('opacity-0'), 10);
+            } else {
+                modal.classList.add('opacity-0');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            }
+        }
+
+        function renderHistory() {
+            const history = getHistory();
+            const list = document.getElementById('historyList');
+            const empty = document.getElementById('historyEmpty');
+            list.innerHTML = '';
+
+            if (history.length === 0) {
+                empty.classList.remove('hidden');
+                return;
+            }
+            empty.classList.add('hidden');
+
+            history.forEach((h, i) => {
+                const date = new Date(h.timestamp).toLocaleString();
+                const card = document.createElement('div');
+                card.className = 'p-3 border-line rounded text-xs space-y-2';
+                card.innerHTML = `
+                    <div class="flex justify-between items-start gap-2">
+                        <p class="font-bold opacity-80 flex-1" style="word-break:break-word;">${h.prompt.length > 80 ? h.prompt.slice(0, 80) + '...' : h.prompt}</p>
+                        <span class="text-[9px] opacity-40 whitespace-nowrap">${date}</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-[9px] opacity-50">
+                        <span>${h.provider || 'local'}</span>
+                        <span>•</span>
+                        <span>${h.model || 'N/A'}</span>
+                        <span>•</span>
+                        <span>${h.resolution || '1280x720'}</span>
+                    </div>
+                    <div class="flex gap-2 pt-1">
+                        <button onclick="rerunPrompt(${i})" class="px-2 py-1 border-line rounded hover:bg-white/10 text-[10px]">↻ Re-run</button>
+                        <button onclick="replayVideo('${h.videoUrl}')" class="px-2 py-1 border-line rounded hover:bg-white/10 text-[10px]">▶ Play</button>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        function rerunPrompt(index) {
+            const history = getHistory();
+            if (history[index]) {
+                document.getElementById('aiPrompt').value = history[index].prompt;
+                toggleHistory();
+            }
+        }
+
+        function replayVideo(url) {
+            toggleHistory();
+            showPreview(url);
+        }
+
+        // =================================================================
+        // SETTINGS PERSISTENCE (localStorage)
+        // =================================================================
+        function saveSettings() {
+            const settings = {
+                theme: document.getElementById('themeSelect').value,
+                provider: document.getElementById('providerSelect').value,
+                apiKey: document.getElementById('apiKey').value,
+                model: document.getElementById('modelSelectValue').value,
+                modelName: document.getElementById('modelSearchInput').value,
+                devMode: document.getElementById('devModeToggle').checked,
+                forceRecompile: document.getElementById('forceRecompileToggle').checked,
+                duration: selectedDuration,
+                fps: selectedFps,
+                style: selectedStyle,
+                width: selectedWidth,
+                height: selectedHeight
+            };
+            localStorage.setItem('charon_settings', JSON.stringify(settings));
+        }
+
+        function updateDevModeUI() {
+            const isDevMode = document.getElementById('devModeToggle').checked;
+            const devPanel = document.getElementById('devPanel');
+            const defaultState = document.getElementById('defaultState');
+            const videoPreview = document.getElementById('videoPreview');
+            const loadingState = document.getElementById('loadingState');
+
+            if (isDevMode) {
+                if (videoPreview.classList.contains('hidden')) {
+                    devPanel.classList.remove('hidden');
+                    defaultState.classList.add('hidden');
+                }
+            } else {
+                devPanel.classList.add('hidden');
+                if (videoPreview.classList.contains('hidden') && loadingState.classList.contains('hidden')) {
+                    defaultState.classList.remove('hidden');
+                }
+            }
+        }
+
+        function loadSettings() {
+            try {
+                const raw = localStorage.getItem('charon_settings');
+                if (!raw) return;
+                const s = JSON.parse(raw);
+
+                // Theme
+                if (s.theme) {
+                    document.getElementById('themeSelect').value = s.theme;
+                    document.documentElement.className = s.theme;
+                }
+                // Provider & key
+                if (s.provider) {
+                    document.getElementById('providerSelect').value = s.provider;
+                    if (s.provider !== 'local') document.getElementById('apiKeyContainer').classList.remove('hidden');
+                }
+                if (s.apiKey) document.getElementById('apiKey').value = s.apiKey;
+                if (s.modelName) document.getElementById('modelSearchInput').value = s.modelName;
+                if (s.model) document.getElementById('modelSelectValue').value = s.model;
+                // Dev mode
+                if (s.devMode) {
+                    document.getElementById('devModeToggle').checked = true;
+                    updateDevModeUI();
+                }
+                // Force recompile
+                if (s.forceRecompile) {
+                    document.getElementById('forceRecompileToggle').checked = true;
+                }
+                // Controls
+                if (s.duration) setDuration(s.duration);
+                if (s.fps) setFps(s.fps);
+                if (s.style) setStyle(s.style);
+                if (s.width && s.height) setResolution(s.width, s.height);
+            } catch(e) {
+                console.warn('Failed to load settings', e);
+            }
+        }
+
+        // Save settings when modal closes or settings change
+        document.getElementById('themeSelect').addEventListener('change', saveSettings);
+        document.getElementById('providerSelect').addEventListener('change', saveSettings);
+        document.getElementById('apiKey').addEventListener('change', saveSettings);
+        document.getElementById('devModeToggle').addEventListener('change', () => {
+            saveSettings();
+            updateDevModeUI();
+        });
+        document.getElementById('forceRecompileToggle').addEventListener('change', saveSettings);
+
+        // Pressing enter in keyboard triggers generation, shift+enter inserts newline
+        document.getElementById('aiPrompt').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                generateVideo();
+            }
+        });
+
+        // Init
+        loadSettings();
+        updateHistoryCount();
+        fetchModels();
+    </script>
+</body>
+</html>
